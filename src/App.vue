@@ -29,6 +29,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
@@ -55,15 +57,41 @@ export default {
         this.menu[index].quantity--;
       }
     },
-    submitOrder() {
+    async submitOrder() {
       const order = this.menu
         .filter(item => item.quantity > 0)
         .map(item => `${item.name} * ${item.quantity}`)
         .join('\n');
 
       if (order) {
-        alert(`訂單已送出！\n${order}`);
-        // 這裡可以加入 Line 訊息傳送的邏輯
+        try {
+          await axios.post(
+            'https://api.line.me/v2/bot/message/push',
+            {
+              to: 'U31c60fab991b24e39158de3aed3d952e', // 替換為你的 Line User ID
+              messages: [
+                {
+                  "type":"text",
+                  "text":"Hello, world1"
+                },
+                {
+                  "type":"text",
+                  "text":"Hello, world2"
+                }
+              ],
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer GRUoQGGd9Ul1rb1jGfvKLln9J1Ov/EUFh2Ze9ZLKw7vqcNm7lZta91YAjluaSm0zu5Y+L3ihBEOS9SGuEQzLn+yj73mTKKr6GpHrWMnlCXWD0hwE07vm3qb9q7Snxk8y2V2mqK9z02NQ8T5rcB8+IQdB04t89/1O/w1cDnyilFU=', // 替換為你的 Channel Access Token
+              },
+            }
+          );
+          alert('訂單已傳送至 Line！');
+        } catch (error) {
+          console.error('傳送失敗:', error);
+          alert('傳送失敗，請稍後再試！', error);
+        }
       } else {
         alert('請選擇至少一道菜！');
       }
