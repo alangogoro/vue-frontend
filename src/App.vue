@@ -1,26 +1,109 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app">
+    <h1>餐廳點餐系統</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>菜名</th>
+          <th>單價</th>
+          <th>數量</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(item, index) in menu" :key="index">
+          <td>{{ item.name }}</td>
+          <td>${{ item.price }}</td>
+          <td>
+            <button @click="decreaseQuantity(index)" :disabled="item.quantity === 0">-</button>
+            {{ item.quantity }}
+            <button @click="increaseQuantity(index)" :disabled="item.quantity === 50">+</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="total">
+      <h2>總額: ${{ total }}</h2>
+    </div>
+    <button @click="submitOrder">送出訂單</button>
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
-}
+  data() {
+    return {
+      menu: [
+        { name: '無骨鹽酥雞', price: 60, quantity: 0 },
+        { name: '雞皮', price: 45, quantity: 0 },
+        { name: '花椰菜', price: 45, quantity: 0 },
+      ],
+    };
+  },
+  computed: {
+    total() {
+      return this.menu.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    },
+  },
+  methods: {
+    increaseQuantity(index) {
+      if (this.menu[index].quantity < 50) {
+        this.menu[index].quantity++;
+      }
+    },
+    decreaseQuantity(index) {
+      if (this.menu[index].quantity > 0) {
+        this.menu[index].quantity--;
+      }
+    },
+    submitOrder() {
+      const order = this.menu
+        .filter(item => item.quantity > 0)
+        .map(item => `${item.name} * ${item.quantity}`)
+        .join('\n');
+
+      if (order) {
+        alert(`訂單已送出！\n${order}`);
+        // 這裡可以加入 Line 訊息傳送的邏輯
+      } else {
+        alert('請選擇至少一道菜！');
+      }
+    },
+  },
+};
 </script>
 
 <style>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: Arial, sans-serif;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+button {
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 0 5px;
+}
+
+.total {
+  margin-bottom: 20px;
 }
 </style>
