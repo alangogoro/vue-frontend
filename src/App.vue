@@ -257,15 +257,15 @@ export default {
 body {
   font-family: 'Arial', sans-serif;
   margin: 0;
-  padding: 20px;
+  padding: 10px;
   background-color: #f5f5f5;
 }
 
 #app {
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0 10px;
   background: white;
-  padding: 30px;
+  padding: 15px;
   border-radius: 15px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 }
@@ -304,9 +304,11 @@ body {
 .item-with-size,
 .simple-item {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: 8px;
   background: #f9f9f9;
   border-radius: 8px;
   transition: background 0.2s;
@@ -318,17 +320,20 @@ body {
 }
 
 .item-name {
-  font-weight: 500;
+  font-size: 16px;
+  min-width: 100px;
   color: #34495e;
   flex: 1;
 }
 
 .size-select {
-  margin-left: 15px;
-  padding: 8px 12px;
+  margin-left: 8px;
+  padding: 4px 8px;
+  max-width: 100px;
   border: 1px solid #ddd;
   border-radius: 5px;
   background: white;
+  font-size: 14px;
 }
 
 /* 數量控制 */
@@ -340,7 +345,8 @@ body {
 }
 
 .qty-btn {
-  padding: 8px 15px;
+  padding: 6px 12px;
+  min-width: 40px;
   background: #3498db;
   color: white;
   border: none;
@@ -396,10 +402,11 @@ body {
 }
 
 .seasoning-select {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 5px;
-  width: 200px;
+  width: 100px;
+  font-size: 14px;
 }
 
 .toppings-group {
