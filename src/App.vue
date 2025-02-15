@@ -73,7 +73,12 @@
         <span class="total-label">總金額：</span>
         <span class="total-amount">${{ total }}</span>
       </div>
-      <button class="submit-btn" @click="submitOrder">送出訂單</button>
+      <button class="submit-btn" @click="submitOrder" :disabled="isSubmitting">
+        <div class="btn-content">
+          <span v-if="!isSubmitting">送出訂單</span>
+          <div v-else class="loading-spinner"></div>
+        </div>
+      </button>
     </div>
   </div>
 </template>
@@ -84,6 +89,7 @@ import axios from 'axios';
 export default {
   data() {
     return {
+      isSubmitting: false,
       categories: [
         {
           name: '肉食類',
@@ -174,6 +180,8 @@ export default {
       if (item.quantity > 0) item.quantity--
     },
     async submitOrder() {
+      this.isSubmitting = true;
+
       try {
         if (this.total === 0) {
           throw new Error('請選擇至少一項商品');
@@ -187,23 +195,45 @@ export default {
             size: item.sizes ? item.sizes[item.selectedSize].label : ''
           }))
         );
+
         const orderData = {
           items: orderItems,
           seasoning: this.seasoning,
           total: this.total
         };
+
         const formattedOrder = this.formatOrderText(orderData);
 
-        const response = await axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
+        let timeoutId;
+
+        const timeoutPromise = new Promise((resolve) => {
+          timeoutId = setTimeout(() => {
+            resolve({ status: 'timeout' });
+          }, 10000);
+        });
+
+        const fetchPromise = axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
           order: formattedOrder
         });
+
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        clearTimeout(timeoutId);
+
+        if (response.status === 'timeout') {
+          alert('好像有人睡著囉！請和老闆確認他有收到訂單');
+          return;
+        }
 
         if (response.status == 200) {
           alert('訂單已成功送出！請至店面結帳');
         }
       } catch (error) {
-        console.error('訂單發送失敗:', error)
+
+        console.error('訂單發送失敗:', error);
         alert(error.message || '訂單發送失敗，請稍後再試');
+
+      } finally {
+        this.isSubmitting = false;
       }
     },
     formatOrderText(orderData) {
@@ -215,7 +245,7 @@ export default {
       text += `🌶️辣度：${orderData.seasoning.spiciness}\n`
       text += `🧂粉類：${orderData.seasoning.powder}\n`
       text += `✨配料：${orderData.seasoning.toppings.join(', ')}\n`
-      text += `\n試算金額：$**${orderData.total}**`
+      text += `\n試算金額：$${orderData.total}`
       return text
     }
   }
@@ -445,5 +475,38 @@ body {
 
 .submit-btn:active {
   transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  background: linear-gradient(135deg, #a5a5a5, #808080);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #ffffff;
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
