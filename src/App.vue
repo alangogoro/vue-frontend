@@ -51,7 +51,7 @@
         </div>
 
         <div class="seasoning-group">
-          <label class="seasoning-label">粉類：</label>
+          <label class="seasoning-label">灑粉：</label>
           <select v-model="seasoning.powder" class="seasoning-select">
             <option v-for="opt in powderOptions" :key="opt" :value="opt">{{ opt }}</option>
           </select>
@@ -89,7 +89,7 @@ export default {
           name: '肉食類',
           items: [
             { 
-              name: '鹽酥雞（無骨）',
+              name: '無骨鹽酥雞',
               sizes: [
                 { label: '小份', price: 65 },
                 { label: '大份', price: 115 }
@@ -171,6 +171,16 @@ export default {
       if (item.quantity > 0) item.quantity--
     },
     submitOrder() {
+      try {
+        // 加入訂單驗證
+        if (this.total === 0) {
+          throw new Error('請選擇至少一項商品');
+        }
+        // ... 原有邏輯
+        } catch (error) {
+          alert(error.message);
+        }
+
       const orderItems = this.categories.flatMap(category => 
         category.items.filter(item => item.quantity > 0).map(item => ({
           name: item.name,
@@ -188,10 +198,11 @@ export default {
 
       console.log('訂單內容:', orderData)
       alert('訂單已送出！請至櫃台結帳')
-      
+      /* 發送 POST 請求至 Render 上自建的 server
       axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
         order: this.formatOrderText(orderData)
       })
+        */
     },
     formatOrderText(orderData) {
       let text = '=== 訂單內容 ===\n'
