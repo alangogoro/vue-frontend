@@ -170,7 +170,7 @@ export default {
       const item = category.items[itemIndex]
       if (item.quantity > 0) item.quantity--
     },
-    async submitOrder() {
+    submitOrder() {
       const orderItems = this.categories.flatMap(category => 
         category.items.filter(item => item.quantity > 0).map(item => ({
           name: item.name,
@@ -189,13 +189,9 @@ export default {
       console.log('訂單內容:', orderData)
       alert('訂單已送出！請至櫃台結帳')
       
-      try {
-        await this.axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
+      axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
         order: this.formatOrderText(orderData)
-        })
-      } catch (error) {
-        console.error(error)
-      }
+      })
     },
     formatOrderText(orderData) {
       let text = '=== 訂單內容 ===\n'
