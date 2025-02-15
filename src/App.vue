@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <h1 class="header">三重埔鹽酥雞</h1>
-    
+
     <!-- 菜單分類區塊 -->
     <div v-for="category in categories" :key="category.name" class="menu-category">
       <h2 class="category-title">{{ category.name }}</h2>
@@ -12,9 +12,7 @@
             <div class="item-header">
               <span class="item-name">{{ item.name }}</span>
               <select v-model="item.selectedSize" class="size-select" @change="updateTotal">
-                <option v-for="(size, sizeIndex) in item.sizes" 
-                        :key="sizeIndex"
-                        :value="sizeIndex">
+                <option v-for="(size, sizeIndex) in item.sizes" :key="sizeIndex" :value="sizeIndex">
                   {{ size.label }} ${{ size.price }}
                 </option>
               </select>
@@ -81,6 +79,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
@@ -88,7 +88,7 @@ export default {
         {
           name: '肉食類',
           items: [
-            { 
+            {
               name: '無骨鹽酥雞',
               sizes: [
                 { label: '小份', price: 65 },
@@ -97,7 +97,7 @@ export default {
               selectedSize: 0,
               quantity: 0
             },
-            { 
+            {
               name: '深海魷魚',
               sizes: [
                 { label: '小份', price: 70 },
@@ -159,6 +159,9 @@ export default {
       }, 0)
     }
   },
+  mounted() {
+    console.log('axios 已成功引入:', axios);
+  },
   methods: {
     increaseQuantity(categoryName, itemIndex) {
       const category = this.categories.find(c => c.name === categoryName)
@@ -170,50 +173,49 @@ export default {
       const item = category.items[itemIndex]
       if (item.quantity > 0) item.quantity--
     },
-    submitOrder() {
+    async submitOrder() {
       try {
-        // 加入訂單驗證
         if (this.total === 0) {
           throw new Error('請選擇至少一項商品');
         }
-        // ... 原有邏輯
-        } catch (error) {
-          alert(error.message);
+
+        const orderItems = this.categories.flatMap(category =>
+          category.items.filter(item => item.quantity > 0).map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.sizes ? item.sizes[item.selectedSize].price : item.price,
+            size: item.sizes ? item.sizes[item.selectedSize].label : ''
+          }))
+        );
+        const orderData = {
+          items: orderItems,
+          seasoning: this.seasoning,
+          total: this.total
+        };
+        const formattedOrder = this.formatOrderText(orderData);
+
+        const response = await axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
+          order: formattedOrder
+        });
+
+        if (response.status == 200) {
+          alert('訂單已成功送出！請至店面結帳');
         }
-
-      const orderItems = this.categories.flatMap(category => 
-        category.items.filter(item => item.quantity > 0).map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.sizes ? item.sizes[item.selectedSize].price : item.price,
-          size: item.sizes ? item.sizes[item.selectedSize].label : '單份'
-        }))
-      )
-
-      const orderData = {
-        items: orderItems,
-        seasoning: this.seasoning,
-        total: this.total
+      } catch (error) {
+        console.error('訂單發送失敗:', error)
+        alert(error.message || '訂單發送失敗，請稍後再試');
       }
-
-      console.log('訂單內容:', orderData)
-      alert('訂單已送出！請至櫃台結帳')
-      /* 發送 POST 請求至 Render 上自建的 server
-      axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
-        order: this.formatOrderText(orderData)
-      })
-        */
     },
     formatOrderText(orderData) {
-      let text = '=== 訂單內容 ===\n'
+      let text = '==== 訂單內容 ====\n'
       orderData.items.forEach(item => {
-        text += `${item.name} ${item.size} x${item.quantity} $${item.price * item.quantity}\n`
+        text += `${item.name} ${item.size} x${item.quantity}\n`
       })
-      text += '\n調味選擇：\n'
-      text += `辣度：${orderData.seasoning.spiciness}\n`
-      text += `粉類：${orderData.seasoning.powder}\n`
-      text += `配料：${orderData.seasoning.toppings.join(', ')}\n`
-      text += `\n總金額：$${orderData.total}`
+      text += `\n`
+      text += `🌶️辣度：${orderData.seasoning.spiciness}\n`
+      text += `🧂粉類：${orderData.seasoning.powder}\n`
+      text += `✨配料：${orderData.seasoning.toppings.join(', ')}\n`
+      text += `\n試算金額：$**${orderData.total}**`
       return text
     }
   }
@@ -235,7 +237,7 @@ body {
   background: white;
   padding: 30px;
   border-radius: 15px;
-  box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* 標題 */
@@ -269,7 +271,8 @@ body {
   gap: 15px;
 }
 
-.item-with-size, .simple-item {
+.item-with-size,
+.simple-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -279,7 +282,8 @@ body {
   transition: background 0.2s;
 }
 
-.item-with-size:hover, .simple-item:hover {
+.item-with-size:hover,
+.simple-item:hover {
   background: #f0f0f0;
 }
 
