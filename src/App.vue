@@ -81,76 +81,23 @@
       </button>
     </div>
   </div>
+  <router-view></router-view>
 </template>
 
 <script>
 import axios from 'axios';
 
 export default {
+  name: 'App',
   data() {
     return {
       isSubmitting: false,
-      categories: [
-        {
-          name: '肉食類',
-          items: [
-            {
-              name: '無骨鹽酥雞',
-              sizes: [
-                { label: '小份', price: 65 },
-                { label: '大份', price: 115 }
-              ],
-              selectedSize: 0,
-              quantity: 0
-            },
-            {
-              name: '深海魷魚',
-              sizes: [
-                { label: '小份', price: 70 },
-                { label: '大份', price: 115 }
-              ],
-              selectedSize: 0,
-              quantity: 0
-            },
-            { name: '香酥雞軟骨', price: 60, quantity: 0 },
-            { name: '香滷雞屁股（兩串）', price: 45, quantity: 0 },
-            { name: '雞米花', price: 50, quantity: 0 },
-            { name: '麥克雞塊', price: 50, quantity: 0 }
-          ]
-        },
-        {
-          name: '蔬菜類',
-          items: [
-            { name: '酥脆榴瓜條', price: 45, quantity: 0 },
-            { name: '杏鮑菇', price: 55, quantity: 0 },
-            { name: '花椰菜', price: 45, quantity: 0 },
-            { name: '玉米筍', price: 45, quantity: 0 },
-            { name: '四季豆', price: 45, quantity: 0 }
-          ]
-        },
-        {
-          name: '配著吃更好吃',
-          items: [
-            { name: '純芋泥球', price: 45, quantity: 0 },
-            { name: '流沙芋泥球', price: 55, quantity: 0 },
-            { name: '加拿大脆薯', price: 45, quantity: 0 },
-            { name: '百頁豆腐', price: 35, quantity: 0 },
-            { name: '花枝丸', price: 40, quantity: 0 },
-            { name: '雞蛋豆腐', price: 45, quantity: 0 },
-            { name: '小熱狗', price: 35, quantity: 0 },
-            { name: '米血糕', price: 25, quantity: 0 },
-            { name: '甜不辣', price: 40, quantity: 0 }
-          ]
-        }
-      ],
+      categories: [],
       seasoning: {
         spiciness: '不辣',
-        powder: '胡椒粉',
+        powder: '未選',
         toppings: []
-      },
-      spicinessOptions: ['不辣', '小辣', '中辣', '大辣'],
-      powderOptions: ['胡椒粉', '梅粉'],
-      toppingOptions: ['蔥花', '蒜粒', '洋蔥', '九層塔']
+      }
     }
   },
   computed: {
@@ -168,6 +115,9 @@ export default {
   mounted() {
     console.log('axios 已成功引入:', axios);
   },
+  async created() {
+    await this.fetchMenu()
+  },
   methods: {
     increaseQuantity(categoryName, itemIndex) {
       const category = this.categories.find(c => c.name === categoryName)
@@ -178,6 +128,18 @@ export default {
       const category = this.categories.find(c => c.name === categoryName)
       const item = category.items[itemIndex]
       if (item.quantity > 0) item.quantity--
+    },
+    async fetchMenu() {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_API_URL}/api/kuasasiaola`)
+        this.categories = response.data.categories
+        this.spicinessOptions = response.data.seasoning.spicinessOptions
+        this.powderOptions = response.data.seasoning.powderOptions
+        this.toppingOptions = response.data.seasoning.toppingOptions
+      } catch (error) {
+        console.error('菜單載入失敗:', error)
+        alert(`${process.env.VUE_APP_API_URL}`)
+      }
     },
     async submitOrder() {
       this.isSubmitting = true;
@@ -212,7 +174,7 @@ export default {
           }, 10000);
         });
 
-        const fetchPromise = axios.post('https://flask-backend-si0h.onrender.com/api/send-to-line', {
+        const fetchPromise = axios.post(`${process.env.VUE_APP_API_URL}/api/send-to-line`, {
           order: formattedOrder
         });
 
@@ -228,7 +190,7 @@ export default {
           alert('訂單已成功送出！請至店面結帳');
         }
       } catch (error) {
-
+        
         console.error('訂單發送失敗:', error);
         alert(error.message || '訂單發送失敗，請稍後再試');
 
