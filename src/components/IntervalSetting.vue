@@ -15,7 +15,7 @@
         :style="getButtonStyle(m)" @click="selectInterval(m)" :disabled="isSubmitting">
         <div class="btn-content">
           <span>{{ m }}分鐘</span>
-          <div v-if="isSubmitting && currentInterval === m" class="loading-spinner"></div>
+          <div v-if="isSubmitting && selectedInterval === m" class="loading-spinner"></div>
         </div>
       </button>
     </div>
@@ -35,7 +35,7 @@ export default {
   },
   mounted() {
     this.fetchCurrentInterval()
-    this.timer = setInterval(this.syncInterval, 5 * 60 * 1000) // 每5分鐘同步
+    this.timer = setInterval(this.syncInterval, 6 * 60 * 1000) // 每6分鐘同步
   },
   methods: {
     async fetchCurrentInterval() {
@@ -78,8 +78,7 @@ export default {
       this.updateInterval();
     },
     async syncInterval() {
-      await this.updateInterval()
-      await this.fetchCurrentInterval()
+      await this.updateInterval();
     }
   },
   beforeUnmount() {
