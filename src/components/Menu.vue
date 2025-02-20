@@ -2,38 +2,6 @@
     <div id="app">
         <h1 class="header">三重埔鹽酥雞</h1>
 
-        <div class="customer-info-section">
-            <h2 class="section-title">訂購資訊</h2>
-
-            <div class="form-card">
-                <div class="input-group">
-                    <label class="input-label required">您的稱呼</label>
-                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：王先生" required>
-                </div>
-
-                <div class="input-group time-picker-wrapper">
-                    <label class="input-label">取餐時間</label>
-                    <div class="time-select-container">
-                        <select v-model="pickupTime" @change="validatePickupTime"
-                            :class="['custom-time-select', { 'invalid': !isValidTime }]">
-                            <option v-for="time in availableTimes" :key="time.value" :value="time.value"
-                                :disabled="time.disabled">
-                                {{ time.display }}
-                            </option>
-                        </select>
-                        <span class="time-hint">{{ timeHintMessage }}</span>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">備註</label>
-                    <textarea v-model="customer.notes" class="modern-textarea" maxlength="200" placeholder="特殊需求請在此備註"
-                        @input="checkNotesLength"></textarea>
-                    <div class="char-counter">{{ customer.notes.length }}/200</div>
-                </div>
-            </div>
-        </div>
-
         <!-- 菜單分類區塊 -->
         <div v-for="category in categories" :key="category.name" class="menu-category">
             <h2 class="category-title">{{ category.name }}</h2>
@@ -99,6 +67,38 @@
             </div>
         </div>
 
+        <div class="customer-info-section">
+            <h2 class="customer-info-title">訂購資訊</h2>
+
+            <div class="form-card">
+                <div class="input-group">
+                    <label class="input-label required">您的稱呼</label>
+                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：老王" required>
+                </div>
+
+                <div class="input-group time-picker-wrapper">
+                    <label class="input-label">取餐時間</label>
+                    <div class="time-select-container">
+                        <select v-model="pickupTime" @change="validatePickupTime"
+                            :class="['custom-time-select', { 'invalid': !isValidTime }]">
+                            <option v-for="time in availableTimes" :key="time.value" :value="time.value"
+                                :disabled="time.disabled">
+                                {{ time.display }}
+                            </option>
+                        </select>
+                        <span class="time-hint">{{ timeHintMessage }}</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">備註</label>
+                    <textarea v-model="customer.notes" class="modern-textarea" maxlength="200" placeholder="特殊需求請在此備註"
+                        @input="checkNotesLength"></textarea>
+                    <div class="char-counter">{{ customer.notes.length }}/200</div>
+                </div>
+            </div>
+        </div>
+
         <!-- 結帳區塊 -->
         <div class="checkout-section">
             <div class="total-display">
@@ -135,11 +135,13 @@ export default {
                 name: '',
                 notes: ''
             },
-            pickupTime: null,
+            availableTimes: [
+                { value: '', display: '不限時間', disabled: false }
+            ],
+            pickupTime: '',
             earlyPickupTime: null,
             interval: 0,
-            availableTimes: null,
-            timeHintMessage: '最早取餐時間 10 分鐘後'
+            timeHintMessage: '備餐時間至少 10 分鐘'
         }
     },
     computed: {
@@ -156,10 +158,10 @@ export default {
     },
     mounted() {
         console.log('axios 已成功引入:', axios)
-        this.generateTimeSlots()
     },
     async created() {
         await this.fetchMenu()
+        this.generateTimeSlots()
     },
     methods: {
         async fetchMenu() {
@@ -170,7 +172,7 @@ export default {
                 this.powderOptions = response.data.seasoning.powderOptions
                 this.toppingOptions = response.data.seasoning.toppingOptions
                 this.interval = response.data.interval
-                this.setPickupTime()
+                this.timeHintMessage = `目前要等候 ${this.interval} 分鐘`
             } catch (error) {
                 console.error('菜單下載失敗:', error)
                 alert('菜單下載失敗，請稍後再試')
@@ -189,41 +191,57 @@ export default {
         async submitOrder() {
             this.isSubmitting = true;
             try {
+                if (!this.customer.name.trim()) {
+                    throw new Error('請輸入您的稱呼')
+                }
                 if (this.total === 0) {
-                    throw new Error('請選擇至少一項商品');
+                    throw new Error('請選擇至少一項商品')
                 }
 
-                const orderItems = this.categories.flatMap(category =>
-                    category.items.filter(item => item.quantity > 0).map(item => ({
-                        name: item.name,
-                        quantity: item.quantity,
-                        price: item.sizes ? item.sizes[item.selectedSize].price : item.price,
-                        size: item.sizes ? item.sizes[item.selectedSize].label : ''
-                    }))
-                );
-
                 const orderData = {
-                    items: orderItems,
-                    seasoning: this.seasoning,
+                    customer: {
+                        name: this.customer.name,
+                        ...(this.customer.notes && { notes: this.customer.notes }),
+                        ...(this.pickupTime && { pickupTime: this.pickupTime })
+                    },
+                    items: this.categories.flatMap(category =>
+                        category.items
+                            .filter(item => item.quantity > 0)
+                            .map(item => ({
+                                name: item.name,
+                                quantity: item.quantity,
+                                price: item.sizes ? item.sizes[item.selectedSize].price : item.price,
+                                ...(item.sizes && { size: item.sizes[item.selectedSize].label })
+                            }))
+                    ),
+                    seasoning: {
+                        spiciness: this.seasoning.spiciness,
+                        ...(this.seasoning.powder !== '未選' && { powder: this.seasoning.powder }),
+                        ...(this.seasoning.toppings.length > 0 && { toppings: this.seasoning.toppings })
+                    },
                     total: this.total
                 };
 
-                const formattedOrder = this.formatOrderText(orderData);
-
                 let timeoutId;
+                let isResolved = false;
 
                 const timeoutPromise = new Promise((resolve) => {
                     timeoutId = setTimeout(() => {
-                        resolve({ status: 'timeout' });
+                        if (!isResolved) {
+                            resolve({ status: 'timeout' });
+                        }
                     }, 10000);
-                });
+                })
 
-                const fetchPromise = axios.post(`${process.env.VUE_APP_API_URL}/api/send-to-line`, {
-                    order: formattedOrder
-                });
+                const postPromise = axios.post(`${process.env.VUE_APP_API_URL}/api/send-to-line`,
+                    orderData
+                ).then(response => {
+                    isResolved = true;
+                    clearTimeout(timeoutId);
+                    return response;
+                })
 
-                const response = await Promise.race([fetchPromise, timeoutPromise]);
-                clearTimeout(timeoutId);
+                const response = await Promise.race([postPromise, timeoutPromise]);
 
                 if (response.status === 'timeout') {
                     alert('好像有人睡著囉！請和老闆確認他收到訂單沒');
@@ -240,38 +258,46 @@ export default {
                 this.isSubmitting = false;
             }
         },
-        formatOrderText(orderData) {
-            let text = '==== 訂單內容 ====\n'
-            orderData.items.forEach(item => {
-                text += `${item.name} ${item.size} x${item.quantity}\n`
-            })
-            text += `\n`
-            text += `🌶️辣度：${orderData.seasoning.spiciness}\n`
-            text += `🧂粉類：${orderData.seasoning.powder}\n`
-            text += `✨配料：${orderData.seasoning.toppings.join(', ')}\n`
-            text += `\n試算金額：$${orderData.total}`
-            return text
-        },
         generateTimeSlots() {
-            const slots = []
-            const now = new Date()
-            const earliest = new Date(now.getTime() + this.interval * 60000)
+            const now = new Date();
+            const slots = [{ value: '', display: '不限時間', disabled: false }]; // 預設選項
 
-            const timeValue = earliest.toTimeString().slice(0, 5);
-            const hours = earliest.getHours();
-            const displayHours = hours % 12 || 12;
-            const ampm = hours >= 12 ? '下午' : '上午';
+            let baseTime = new Date(now.getTime() + this.interval * 60000);
+            if (this.interval === 0) {
+                baseTime = new Date(now.getTime() + 10 * 60000);
+            }
 
-            slots.push({
-                value: timeValue,
-                display: `${ampm} ${displayHours}:${String(earliest.getMinutes()).padStart(2, '0')}`,
-                disabled: earliest < new Date() // 禁用已过时的时间
-            });
+            // 5分鐘間隔
+            const baseMinutes = baseTime.getMinutes();
+            const alignedMinutes = Math.ceil(baseMinutes / 5) * 5;
+            baseTime.setMinutes(alignedMinutes);
+            baseTime.setSeconds(0, 0);
 
-            earliest.setMinutes(earliest.getMinutes() + 5);
+            // 打烊時間: 25 時
+            const endTime = new Date(now);
+            endTime.setHours(25, 0, 0, 0);
+
+            let time = new Date(baseTime);
+            // 3小時內
+            for (let i = 0; i < 36; i++) {
+                if (time >= endTime || time.getHours() >= 1) break;
+
+                const hours = time.getHours();
+                const displayHours = hours % 12 || 12;
+                const ampm = hours >= 12 ? '下午' : '上午';
+                const minutes = String(time.getMinutes()).padStart(2, '0');
+
+                slots.push({
+                    value: time.toTimeString().slice(0, 5),
+                    display: `${ampm} ${displayHours}:${minutes}`,
+                    disabled: time < now
+                });
+
+                time = new Date(time.getTime() + 5 * 60000);
+            }
 
             this.availableTimes = slots;
-            this.pickupTime = slots[0]?.value; // 自动选择第一个可用时间
+            this.pickupTime = slots.find(t => !t.disabled)?.value || '';
         },
         checkNotesLength() {
             if (this.customer.notes.length >= 200) {
@@ -308,7 +334,6 @@ body {
     font-size: 2.2em;
 }
 
-/* ====== DeepSeek ====== */
 .customer-info-section {
     margin: 20px 0;
     padding: 20px;
@@ -317,16 +342,32 @@ body {
     background: #fff;
 }
 
-.section-title {
-    color: #e74c3c;
+.customer-info-title {
+    color: #2980b9;
+    border-bottom: 2px solid #2980b9;
     font-size: 1.4rem;
+    padding-left: 16px;
     margin: 0 0 20px 0;
     position: relative;
-    padding-left: 16px;
-    border-bottom: 2px solid #e74c3c
 }
 
-.section-title::before {
+/* 动态效果（可选） */
+.customer-info-title::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: #2980b9;
+  transition: width 0.3s ease;
+}
+
+.customer-info-title:hover::after {
+  width: 100%;
+}
+
+.customer-info-title::before {
     content: "";
     position: absolute;
     left: 0;
@@ -334,8 +375,8 @@ body {
     transform: translateY(-50%);
     width: 4px;
     height: 70%;
-    background: #e74c3c;
-    border-radius: 2px;
+    background: #2980b9;
+    border-radius: 10px;
 }
 
 .form-card {
@@ -344,7 +385,6 @@ body {
     background: #ffffff;
     padding: 0;
     margin: 0 auto;
-    /* box-shadow: none; */
 }
 
 .input-group {
@@ -353,7 +393,8 @@ body {
 }
 
 .input-group:last-child {
-    margin-bottom: 0;  /* 最後一個元素不需要底部間距 */
+    margin-bottom: 0;
+    /* 最後一個元素不需要底部間距 */
 }
 
 .input-label {
@@ -433,10 +474,10 @@ body {
 }
 
 .time-hint {
-  display: block;
-  margin-top: 8px;
-  color: #7f8c8d;
-  font-size: 0.85rem;
+    display: block;
+    margin-top: 8px;
+    color: #7f8c8d;
+    font-size: 0.85rem;
 }
 
 @media (max-width: 480px) {
@@ -454,7 +495,8 @@ body {
 
     .modern-input,
     .custom-time-select {
-        font-size: 16px !important; /* 確保移動端輸入文字清晰 */
+        font-size: 16px !important;
+        /* 確保移動端輸入文字清晰 */
         padding: 12px 10px !important;
     }
 
@@ -464,8 +506,6 @@ body {
         min-width: 100% !important;
     }
 }
-
-/* ====== DeepSeek ====== */
 
 .char-counter {
     text-align: right;
