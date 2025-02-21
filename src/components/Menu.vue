@@ -200,7 +200,7 @@ export default {
 
                 const orderData = {
                     customer: {
-                        name: this.customer.name.slice(0, 30),
+                        name: this.customer.name.trim().slice(0, 30),
                         ...(this.pickupTime && { pickupTime: this.pickupTime })
                     },
                     items: this.categories.flatMap(category =>
@@ -250,6 +250,7 @@ export default {
 
                 if (response.status == 200) {
                     alert('訂單已成功送出！請至店面結帳');
+                    this.customer.name = '';
                 }
             } catch (error) {
                 console.error('訂單發送失敗:', error);
