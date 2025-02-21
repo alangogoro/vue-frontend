@@ -1,23 +1,26 @@
 <template>
-  <div class="time-settings">
-    <!-- 標題 -->
-    <div class="header">
-      <h1 class="page-title">等候時間</h1>
-      <div class="current-setting">
-        <span class="label">當前設置：</span>
-        <span class="value">{{ currentInterval }}分鐘</span>
-      </div>
-    </div>
-
-    <!-- 按鈕群組 -->
-    <div class="interval-buttons">
-      <button v-for="m in [0, 15, 30, 45, 60]" :key="m" class="time-option" :class="{ selected: currentInterval === m }"
-        :style="getButtonStyle(m)" @click="selectInterval(m)" :disabled="isSubmitting">
-        <div class="btn-content">
-          <span>{{ m }}分鐘</span>
-          <div v-if="isSubmitting && selectedInterval === m" class="loading-spinner"></div>
+  <div id="app">
+    <div class="TimeInterval">
+      <!-- 標題 -->
+      <div class="header">
+        <h1 class="page-title">等候時間</h1>
+        <div class="current-setting">
+          <span class="label">當前設置：</span>
+          <span class="value">{{ currentInterval }}分鐘</span>
         </div>
-      </button>
+      </div>
+
+      <!-- 按鈕群組 -->
+      <div class="interval-buttons">
+        <button v-for="m in [0, 15, 30, 45, 60]" :key="m" class="time-option"
+          :class="{ selected: currentInterval === m }" :style="getButtonStyle(m)" @click="selectInterval(m)"
+          :disabled="isSubmitting">
+          <div class="btn-content">
+            <span>{{ m }}分鐘</span>
+            <div v-if="isSubmitting && selectedInterval === m" class="loading-spinner"></div>
+          </div>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -60,7 +63,7 @@ export default {
     },
     getButtonStyle(minutes) {
       const palette = {
-        0: { base: '#CFD8DC', active: '#607D8B' },  // 雾灰蓝
+        0: { base: '#F7F7F7', active: '#607D8B' },
         15: { base: '#C8E6C9', active: '#4CAF50' }, // 柔薄荷
         30: { base: '#FFF9C4', active: '#FFD600' }, // 浅琥珀
         45: { base: '#FFE0B2', active: '#FF9800' }, // 晨橙色
@@ -88,6 +91,15 @@ export default {
 </script>
 
 <style scoped>
+#app {
+  max-width: 100%;
+  margin: 0 10px;
+  background: white;
+  padding: 15px;
+  border-radius: 15px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
 .header {
   text-align: center;
   margin-bottom: 2rem;
