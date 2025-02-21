@@ -73,7 +73,7 @@
             <div class="form-card">
                 <div class="input-group">
                     <label class="input-label required">您的稱呼</label>
-                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：老王" required>
+                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：老王" maxlength="30" required>
                 </div>
 
                 <div class="input-group time-picker-wrapper">
@@ -94,7 +94,7 @@
                     <label class="input-label">備註</label>
                     <textarea v-model="customer.notes" class="modern-textarea" maxlength="200" placeholder="特殊需求請在此備註"
                         @input="checkNotesLength"></textarea>
-                    <div class="char-counter">{{ customer.notes.length }}/200</div>
+                    <div class="char-counter">{{ seasoning.notes.length }}/200</div>
                 </div>
             </div>
         </div>
@@ -129,11 +129,11 @@ export default {
             seasoning: {
                 spiciness: '不辣',
                 powder: '未選',
-                toppings: []
+                toppings: [],
+                notes: ''
             },
             customer: {
                 name: '',
-                notes: ''
             },
             availableTimes: [
                 { value: '', display: '不限時間', disabled: false }
@@ -200,8 +200,7 @@ export default {
 
                 const orderData = {
                     customer: {
-                        name: this.customer.name,
-                        ...(this.customer.notes && { notes: this.customer.notes }),
+                        name: this.customer.name.slice(0, 30),
                         ...(this.pickupTime && { pickupTime: this.pickupTime })
                     },
                     items: this.categories.flatMap(category =>
@@ -217,7 +216,8 @@ export default {
                     seasoning: {
                         spiciness: this.seasoning.spiciness,
                         ...(this.seasoning.powder !== '未選' && { powder: this.seasoning.powder }),
-                        ...(this.seasoning.toppings.length > 0 && { toppings: this.seasoning.toppings })
+                        ...(this.seasoning.toppings.length > 0 && { toppings: this.seasoning.toppings }),
+                        ...(this.customer.notes && { notes: this.customer.notes })
                     },
                     total: this.total
                 };
@@ -274,13 +274,13 @@ export default {
             baseTime.setSeconds(0, 0);
 
             // 打烊時間: 25 時
-            const endTime = new Date(now);
+            const endTime = new Date();
             endTime.setHours(25, 0, 0, 0);
 
             let time = new Date(baseTime);
             // 3小時內
             for (let i = 0; i < 36; i++) {
-                if (time >= endTime || time.getHours() >= 1) break;
+                if (time >= endTime) break;
 
                 const hours = time.getHours();
                 const displayHours = hours % 12 || 12;
@@ -300,8 +300,8 @@ export default {
             this.pickupTime = slots.find(t => !t.disabled)?.value || '';
         },
         checkNotesLength() {
-            if (this.customer.notes.length >= 200) {
-                this.customer.notes = this.customer.notes.slice(0, 200)
+            if (this.seasoning.notes.length >= 200) {
+                this.seasoning.notes = this.seasoning.notes.slice(0, 200)
             }
         }
     }
