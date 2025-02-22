@@ -73,7 +73,14 @@
             <div class="form-card">
                 <div class="input-group">
                     <label class="input-label required">您的稱呼</label>
-                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：老王" maxlength="30" required>
+                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：老王" maxlength="30"
+                        required>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">聯絡電話</label>
+                    <input type="tel" v-model="customer.phone" class="modern-input" placeholder="（選填）" pattern="[0-9]*"
+                        inputmode="numeric" maxlength="10">
                 </div>
 
                 <div class="input-group time-picker-wrapper">
@@ -134,6 +141,7 @@ export default {
             },
             customer: {
                 name: '',
+                phone: ''
             },
             availableTimes: [
                 { value: '', display: '不限時間', disabled: false }
@@ -172,7 +180,7 @@ export default {
                 this.powderOptions = response.data.seasoning.powderOptions
                 this.toppingOptions = response.data.seasoning.toppingOptions
                 this.interval = response.data.interval
-                this.timeHintMessage = `目前要等候 ${this.interval} 分鐘`
+                this.updateIntervalHintMessage(this.interval)
             } catch (error) {
                 console.error('菜單下載失敗:', error)
                 alert('菜單下載失敗，請稍後再試')
@@ -201,6 +209,7 @@ export default {
                 const orderData = {
                     customer: {
                         name: this.customer.name.trim().slice(0, 30),
+                        ...(this.customer.phone && { phone: this.customer.phone }),
                         ...(this.pickupTime && { pickupTime: this.pickupTime })
                     },
                     items: this.categories.flatMap(category =>
@@ -300,6 +309,11 @@ export default {
             this.availableTimes = slots;
             this.pickupTime = slots.find(t => !t.disabled)?.value || '';
         },
+        updateIntervalHintMessage(interval) {
+            this.timeHintMessage = interval === 0
+                ? '目前可為您現做'
+                : `目前要等候 ${interval} 分鐘`;
+        },
         checkNotesLength() {
             if (this.seasoning.notes.length >= 200) {
                 this.seasoning.notes = this.seasoning.notes.slice(0, 200)
@@ -354,18 +368,18 @@ body {
 
 /* 动态效果（可选） */
 .customer-info-title::after {
-  content: "";
-  position: absolute;
-  bottom: -3px;
-  left: 0;
-  width: 0%;
-  height: 3px;
-  background: #2980b9;
-  transition: width 0.3s ease;
+    content: "";
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: #2980b9;
+    transition: width 0.3s ease;
 }
 
 .customer-info-title:hover::after {
-  width: 100%;
+    width: 100%;
 }
 
 .customer-info-title::before {
