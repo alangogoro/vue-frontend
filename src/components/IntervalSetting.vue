@@ -22,6 +22,9 @@
         </button>
       </div>
     </div>
+    <div class="global-notification" :class="{ 'show': showNotification }" :data-type="notificationType">
+      {{ notificationMessage }}
+    </div>
   </div>
 </template>
 
@@ -33,7 +36,9 @@ export default {
     return {
       selectedInterval: 0,
       currentInterval: 0,
-      isSubmitting: false,
+      showNotification: false,
+      notificationMessage: '',
+      isSubmitting: false
     }
   },
   mounted() {
@@ -48,6 +53,7 @@ export default {
         this.currentInterval = data.interval;
       } catch (error) {
         console.error('獲取時間失敗:', error);
+        this.showGlobalNotification('⚠️ 無法取得等候時間', 3000, 'warning');
       }
     },
     async updateInterval() {
@@ -55,8 +61,11 @@ export default {
       try {
         await axios.post(`${process.env.VUE_APP_API_URL}/api/setting_time`, { interval: this.selectedInterval })
         await this.fetchCurrentInterval();
+        this.showGlobalNotification('✅ 已設定等候時間', 5000, 'success');
       } catch (error) {
         console.error('設定失敗:', error);
+        const message = error.response?.data?.error || '時間設定失敗，請稍後再試';
+        this.showGlobalNotification(`⚠️ ${message}`, 5000, 'error');
       } finally {
         this.isSubmitting = false;
       }
@@ -82,6 +91,14 @@ export default {
     },
     async syncInterval() {
       await this.updateInterval();
+    },
+    showGlobalNotification(message, duration = 3000, type) {
+      this.notificationMessage = message;
+      this.notificationType = type;
+      this.showNotification = true;
+      setTimeout(() => {
+        this.showNotification = false;
+      }, duration);
     }
   },
   beforeUnmount() {
@@ -213,5 +230,45 @@ export default {
   border-top-color: transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+.global-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 12px;
+    text-align: center;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    color: white;
+    font-weight: bold;
+    transform: translateY(-100%);
+    will-change: transform;
+}
+
+.global-notification.show {
+    transform: translateY(0);
+}
+
+/* 按類型切換背景色 */
+.global-notification[data-type="error"] {
+    background: #e74c3c;
+}
+
+.global-notification[data-type="warning"] {
+    background: #f39c12;
+}
+
+.global-notification[data-type="success"] {
+    background: #2ecc71;
+}
+
+@media (max-width: 480px) {
+    .global-notification {
+        padding: 16px;
+        font-size: 1.1rem;
+    }
 }
 </style>

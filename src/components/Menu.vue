@@ -74,7 +74,8 @@
                 <div class="input-group">
                     <label class="input-label required">您的稱呼</label>
                     <input type="text" v-model="customer.name" class="modern-input" placeholder="例：老王" maxlength="30"
-                        required>
+                        required @blur="validateName">
+                    <div class="input-error" v-if="nameError">{{ nameError }}</div>
                 </div>
 
                 <div class="input-group">
@@ -101,9 +102,13 @@
                     <label class="input-label">備註</label>
                     <textarea v-model="customer.notes" class="modern-textarea" maxlength="200" placeholder="特殊需求請在此備註"
                         @input="checkNotesLength"></textarea>
-                    <div class="char-counter">{{ seasoning.notes.length }}/200</div>
+                    <div class="char-counter" :data-count="customer.notes.length">{{ customer.notes.length }}/200</div>
                 </div>
             </div>
+        </div>
+
+        <div class="global-notification" :class="{ 'show': showNotification }" :data-type="notificationType">
+            {{ notificationMessage }}
         </div>
 
         <!-- 結帳區塊 -->
@@ -130,26 +135,28 @@ export default {
     name: 'App',
     data() {
         return {
-            isSubmitting: false,
+            showNotification: false,
+            notificationMessage: '',
+            nameError: '',
+            pickupTime: '',
+            availableTimes: [
+                { value: '', display: '不限時間', disabled: false }
+            ],
+            interval: 0,
+            timeHintMessage: '目前要等候 0 分鐘',
             isValidTime: true,
+            isSubmitting: false,
             categories: [],
             seasoning: {
                 spiciness: '不辣',
                 powder: '未選',
-                toppings: [],
-                notes: ''
+                toppings: []
             },
             customer: {
                 name: '',
-                phone: ''
-            },
-            availableTimes: [
-                { value: '', display: '不限時間', disabled: false }
-            ],
-            pickupTime: '',
-            earlyPickupTime: null,
-            interval: 0,
-            timeHintMessage: '備餐時間至少 10 分鐘'
+                phone: '',
+                notes: ''
+            }
         }
     },
     computed: {
@@ -174,6 +181,7 @@ export default {
     methods: {
         async fetchMenu() {
             try {
+
                 const response = await axios.get(`${process.env.VUE_APP_API_URL}/api/kuasasiaola`)
                 this.categories = response.data.categories
                 this.spicinessOptions = response.data.seasoning.spicinessOptions
@@ -181,9 +189,10 @@ export default {
                 this.toppingOptions = response.data.seasoning.toppingOptions
                 this.interval = response.data.interval
                 this.updateIntervalHintMessage(this.interval)
+
             } catch (error) {
-                console.error('菜單下載失敗:', error)
-                alert('菜單下載失敗，請稍後再試')
+                console.error('菜單載入失敗:', error);
+                this.showGlobalNotification('⚠️ 菜單載入失敗，請稍後再試', 3000, 'error');
             }
         },
         increaseQuantity(categoryName, itemIndex) {
@@ -197,14 +206,18 @@ export default {
             if (item.quantity > 0) item.quantity--
         },
         async submitOrder() {
+            if (!this.customer.name.trim()) {
+                this.validateName();
+                return;
+            }
+
+            if (this.total === 0) {
+                this.showGlobalNotification('⚠️ 請選擇至少一項商品', 3000, 'info');
+                return;
+            }
+
             this.isSubmitting = true;
             try {
-                if (!this.customer.name.trim()) {
-                    throw new Error('請輸入您的稱呼')
-                }
-                if (this.total === 0) {
-                    throw new Error('請選擇至少一項商品')
-                }
 
                 const orderData = {
                     customer: {
@@ -253,19 +266,44 @@ export default {
                 const response = await Promise.race([postPromise, timeoutPromise]);
 
                 if (response.status === 'timeout') {
-                    alert('好像有人睡著囉！請和老闆確認他收到訂單沒');
-                    return;
+                    this.showGlobalNotification('‼️ 處理過久，請聯絡店家確認', 8000, 'warning');
                 }
 
                 if (response.status == 200) {
-                    alert('訂單已成功送出！請至店面結帳');
+                    this.showGlobalNotification('✅ 訂單已送出！請至店面結帳', 5000, 'success');
                     this.customer.name = '';
                 }
+
             } catch (error) {
-                console.error('訂單發送失敗:', error);
-                alert(error.message || '訂單發送失敗，請稍後再試');
+                const message = error.response?.data?.error || '訂單發送失敗，請稍後再試';
+                this.showGlobalNotification(`⚠️ ${message}`, 5000, 'error');
             } finally {
                 this.isSubmitting = false;
+            }
+        },
+        validateName() {
+            if (!this.customer.name.trim()) {
+                this.showGlobalNotification('⚠️ 請輸入您的稱呼', 3000, 'info');
+                this.nameError = '請輸入您的稱呼';
+            } else {
+                this.nameError = '';
+            }
+        },
+        // 震動回饋
+        triggerHapticFeedback() {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(50);
+            }
+        },
+        showGlobalNotification(message, duration = 3000, type = 'info') {
+            this.notificationMessage = message;
+            this.notificationType = type;
+            this.showNotification = true;
+            setTimeout(() => {
+                this.showNotification = false;
+            }, duration);
+            if (['error', 'warning'].includes(type)) {
+                this.triggerHapticFeedback();
             }
         },
         generateTimeSlots() {
@@ -315,8 +353,8 @@ export default {
                 : `目前要等候 ${interval} 分鐘`;
         },
         checkNotesLength() {
-            if (this.seasoning.notes.length >= 200) {
-                this.seasoning.notes = this.seasoning.notes.slice(0, 200)
+            if (this.customer.notes.length >= 200) {
+                this.customer.notes = this.customer.notes.slice(0, 200)
             }
         }
     }
@@ -347,6 +385,44 @@ body {
     color: #2c3e50;
     margin-bottom: 30px;
     font-size: 2.2em;
+}
+
+/* 全局通知 */
+.global-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 12px;
+    text-align: center;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    color: white;
+    font-weight: bold;
+    transform: translateY(-100%);
+    will-change: transform;
+}
+
+.global-notification.show {
+    transform: translateY(0);
+}
+
+/* 按類型切換背景色 */
+.global-notification[data-type="error"] {
+    background: #e74c3c;
+}
+
+.global-notification[data-type="warning"] {
+    background: #f39c12;
+}
+
+.global-notification[data-type="success"] {
+    background: #2ecc71;
+}
+
+.global-notification[data-type="info"] {
+    background: #3498db;
 }
 
 .customer-info-section {
@@ -425,6 +501,29 @@ body {
     color: #e74c3c;
     margin-left: 4px;
     vertical-align: middle;
+}
+
+.input-error {
+    color: #e74c3c;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(5px);
+    }
+
+    75% {
+        transform: translateX(-5px);
+    }
 }
 
 .modern-textarea {
@@ -511,7 +610,6 @@ body {
     .modern-input,
     .custom-time-select {
         font-size: 16px !important;
-        /* 確保移動端輸入文字清晰 */
         padding: 12px 10px !important;
     }
 
@@ -520,13 +618,27 @@ body {
         width: 100% !important;
         min-width: 100% !important;
     }
+
+    .global-notification {
+        padding: 16px;
+        font-size: 1.1rem;
+    }
+
+    .input-error {
+        font-size: 0.9rem;
+    }
 }
 
 .char-counter {
-    text-align: right;
-    color: #666;
-    font-size: 0.8em;
+  font-size: 0.8em;
+  color: #666;
+  text-align: right;
+  transition: color 0.3s ease;
 }
+
+/* 接近字数限制时改变颜色 */
+.char-counter[data-count="190"] { color: #f39c12; }
+.char-counter[data-count="200"] { color: #e74c3c; }
 
 small {
     color: #666;
