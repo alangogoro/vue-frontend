@@ -138,6 +138,7 @@ export default {
             showNotification: false,
             notificationMessage: '',
             nameError: '',
+            isOpening: true,
             pickupTime: '',
             availableTimes: [
                 { value: '', display: '不限時間', disabled: false }
@@ -307,6 +308,10 @@ export default {
             }
         },
         generateTimeSlots() {
+            if (this.isOpening === false) {
+                return
+            }
+
             const now = new Date();
             const slots = [{ value: '', display: '不限時間', disabled: false }]; // 預設選項
 
@@ -321,8 +326,10 @@ export default {
             baseTime.setMinutes(alignedMinutes);
             baseTime.setSeconds(0, 0);
 
-            // 打烊時間: 25 時
-            const endTime = new Date();
+            // 營業期間
+            const startTime = new Date(baseTime);
+            startTime.setHours(18, 30, 0, 0);
+            const endTime = new Date(baseTime);
             endTime.setHours(25, 0, 0, 0);
 
             let time = new Date(baseTime);
@@ -330,15 +337,12 @@ export default {
             for (let i = 0; i < 36; i++) {
                 if (time >= endTime) break;
 
-                const hours = time.getHours();
-                const displayHours = hours % 12 || 12;
-                const ampm = hours >= 12 ? '下午' : '上午';
-                const minutes = String(time.getMinutes()).padStart(2, '0');
+                const { period, displayHours, minutes } = this.format(time);
 
                 slots.push({
                     value: time.toTimeString().slice(0, 5),
-                    display: `${ampm} ${displayHours}:${minutes}`,
-                    disabled: time < now
+                    display: `${period} ${displayHours}:${minutes}`,
+                    disabled: time < now || time >= endTime || this.isNonBusinessHours(time)
                 });
 
                 time = new Date(time.getTime() + 5 * 60000);
@@ -346,6 +350,20 @@ export default {
 
             this.availableTimes = slots;
             this.pickupTime = slots.find(t => !t.disabled)?.value || '';
+        },
+        format(time) {
+            const hours = time.getHours();
+            return {
+                period: hours >= 12 ? '下午' : '上午',
+                displayHours: hours % 12 || 12,
+                minutes: String(time.getMinutes()).padStart(2, '0')
+            };
+        },
+        isNonBusinessHours(time) {
+            const hour = time.getHours();
+            const isAfterClose = hour >= 1 && hour < 18;
+            const isBeforeOpen = hour === 18 && time.getMinutes() < 40;
+            return isAfterClose || isBeforeOpen;
         },
         updateIntervalHintMessage(interval) {
             this.timeHintMessage = interval === 0
@@ -630,15 +648,20 @@ body {
 }
 
 .char-counter {
-  font-size: 0.8em;
-  color: #666;
-  text-align: right;
-  transition: color 0.3s ease;
+    font-size: 0.8em;
+    color: #666;
+    text-align: right;
+    transition: color 0.3s ease;
 }
 
 /* 接近字数限制时改变颜色 */
-.char-counter[data-count="190"] { color: #f39c12; }
-.char-counter[data-count="200"] { color: #e74c3c; }
+.char-counter[data-count="190"] {
+    color: #f39c12;
+}
+
+.char-counter[data-count="200"] {
+    color: #e74c3c;
+}
 
 small {
     color: #666;
