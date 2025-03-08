@@ -19,7 +19,7 @@
                         </div>
                         <div class="quantity-control">
                             <button class="qty-btn" @click="decreaseQuantity(category.name, index)">-</button>
-                            <span class="quantity">{{ item.quantity }}</span>
+                            <span class="quantity" :class="{ 'highlight': item.quantity > 0 }">{{ item.quantity }}</span>
                             <button class="qty-btn" @click="increaseQuantity(category.name, index)">+</button>
                         </div>
                     </div>
@@ -29,7 +29,7 @@
                         <span class="item-name">{{ item.name }} ${{ item.price }}</span>
                         <div class="quantity-control">
                             <button class="qty-btn" @click="decreaseQuantity(category.name, index)">-</button>
-                            <span class="quantity">{{ item.quantity }}</span>
+                            <span class="quantity" :class="{ 'highlight': item.quantity > 0 }">{{ item.quantity }}</span>
                             <button class="qty-btn" @click="increaseQuantity(category.name, index)">+</button>
                         </div>
                     </div>
@@ -170,7 +170,7 @@ export default {
                     return catSum + (item.price * item.quantity)
                 }, 0)
             }, 0)
-        }
+        },
     },
     mounted() {
         console.log('axios 已成功引入:', axios)
@@ -400,7 +400,7 @@ body {
 /* 標題 */
 .header {
     text-align: center;
-    color: #2c3e50;
+    color: #FF6B6B;
     margin-bottom: 30px;
     font-size: 2.2em;
 }
@@ -682,12 +682,37 @@ small {
     background: #fff;
 }
 
-.category-title {
+/* .category-title {
     color: #e74c3c;
     border-bottom: 2px solid #e74c3c;
+} */
+
+.category-title {
+    border-bottom: 2px solid;
     padding-bottom: 10px;
     margin-bottom: 15px;
     font-size: 1.4em;
+}
+
+.menu-category:nth-child(1) .category-title {
+    color: #FFA500;
+    border-bottom-color: #FFA500;
+}
+.menu-category:nth-child(2) .category-title {
+    color: #FF6347;
+    border-bottom-color: #FF6347;
+}
+.menu-category:nth-child(3) .category-title {
+    color: #54ad79;
+    border-bottom-color: #54ad79;
+}
+.menu-category:nth-child(4) .category-title {
+    color: #DA70D6;
+    border-bottom-color: #DA70D6;
+}
+.menu-category:nth-child(5) .category-title {
+    color: #FF69B4;
+    border-bottom-color: #FF69B4;
 }
 
 /* 商品項目 */
@@ -770,6 +795,13 @@ small {
     min-width: 30px;
     text-align: center;
     font-weight: bold;
+    color: #2c3e50;
+    transition: color 0.3s ease;
+}
+
+.quantity.highlight {
+    color: #FF6B6B;
+    font-weight: 800;
 }
 
 /* 調味選擇 */
