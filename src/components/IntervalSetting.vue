@@ -10,7 +10,7 @@
         </div>
       </div>
 
-      <!-- 按鈕群組 -->
+      <!-- 時段按鈕群組 -->
       <div class="interval-buttons">
         <button v-for="m in [0, 15, 30, 45, 60]" :key="m" class="time-option"
           :class="{ selected: currentInterval === m }" :style="getButtonStyle(m)" @click="selectInterval(m)"
@@ -21,6 +21,16 @@
           </div>
         </button>
       </div>
+
+      <!-- 營業狀態按鈕 -->
+      <button class="time-option" :class="{ 'selected': isOpen, 'rest-mode': !isOpen }"
+      @click="toggleOpenStatus"
+      :disabled="isSubmitting">
+        <div class="btn-content">
+          <span>{{ isOpen ? '營業中' : '休息中' }}</span>
+          <div v-if="isSubmitting" class="loading-spinner"></div>
+        </div>
+      </button>
     </div>
     <div class="global-notification" :class="{ 'show': showNotification }" :data-type="notificationType">
       {{ notificationMessage }}
@@ -38,11 +48,13 @@ export default {
       currentInterval: 0,
       showNotification: false,
       notificationMessage: '',
-      isSubmitting: false
+      isSubmitting: false,
+      isOpen: true
     }
   },
   mounted() {
     this.fetchCurrentInterval()
+    this.fetchCurrentOpen()
     this.timer = setInterval(this.syncInterval, 6 * 60 * 1000) // 每6分鐘同步
   },
   methods: {
@@ -59,13 +71,39 @@ export default {
     async updateInterval() {
       this.isSubmitting = true;
       try {
-        await axios.post(`${process.env.VUE_APP_API_URL}/api/setting_time`, { interval: this.selectedInterval })
+        await axios.post(`${process.env.VUE_APP_API_URL}/api/setting_time`, { interval: this.selectedInterval });
         await this.fetchCurrentInterval();
+
         this.showGlobalNotification('✅ 已設定等候時間', 5000, 'success');
       } catch (error) {
         console.error('設定失敗:', error);
-        const message = error.response?.data?.error || '時間設定失敗，請稍後再試';
-        this.showGlobalNotification(`⚠️ ${message}`, 5000, 'error');
+        const msg = error.response?.data?.error || '時間設定失敗，請稍後再試';
+        this.showGlobalNotification(`⚠️ ${msg}`, 5000, 'error');
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+    async fetchCurrentOpen() {
+      try {
+        const res = await fetch(`${process.env.VUE_APP_API_URL}/api/setting_open`);
+        const data = await res.json();
+        this.isOpen = data.opened;
+      } catch (error) {
+        console.error('獲取營業錯誤:', error);
+        this.showGlobalNotification('⚠️ 無法取得營業狀態', 3000, 'warning');
+      }
+    },
+    async toggleOpenStatus() {
+      this.isSubmitting = true;
+      try {
+        await axios.post(`${process.env.VUE_APP_API_URL}/api/setting_open`, { opened: !this.isOpen });
+        await this.fetchCurrentOpen();
+        
+        const message = this.isOpen ? '✅ 已開啟營業' : '🚫 已停止營業';
+        this.showGlobalNotification(message, 5000, 'success');
+      } catch (error) {
+        const msg = error.response?.data?.error || '營業更新失敗';
+        this.showGlobalNotification(`⚠️ ${msg}`, 5000, 'error');
       } finally {
         this.isSubmitting = false;
       }
@@ -223,6 +261,29 @@ export default {
   z-index: 1;
 }
 
+/* 營業中按鈕 */
+.time-option.selected {
+  --base-color: #C8E6C9;      /* 營業中底色 (柔薄荷) */
+  --active-color: #4CAF50;    /* 邊框顏色 (品牌綠) */
+}
+
+.time-option.selected .btn-content span {
+  color: #2c3e50;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* 休息中按鈕 */
+.time-option.rest-mode {
+  --base-color: #F0F0F0;
+  --active-color: #666;
+}
+
+.time-option.rest-mode .btn-content span {
+  color: #666;
+  font-weight: 600;
+}
+
 .loading-spinner {
   width: 20px;
   height: 20px;
@@ -230,6 +291,13 @@ export default {
   border-top-color: transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+/* 調整按鈕間距 */
+.interval-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .global-notification {

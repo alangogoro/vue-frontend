@@ -73,7 +73,7 @@
             <div class="form-card">
                 <div class="input-group">
                     <label class="input-label required">您的稱呼</label>
-                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：老王" maxlength="30"
+                    <input type="text" v-model="customer.name" class="modern-input" placeholder="例：安啾" maxlength="30"
                         required @blur="validateName">
                     <div class="input-error" v-if="nameError">{{ nameError }}</div>
                 </div>
@@ -124,6 +124,17 @@
                 </div>
             </button>
         </div>
+
+        <transition name="slide-up">
+        <div v-if="showShopClosed" class="shop-closed-notice" @click.self="closeShopNotice">
+            <div class="notice-content">
+            <button class="close-btn" @click="closeShopNotice">×</button>
+            <h2 class="notice-title">我們打烊了！</h2>
+            <p class="notice-close-day">每週一．二為固定公休時間</p>            
+            <div class="notice-icon">🌧️ 🐕 🌧️</div>
+            </div>
+        </div>
+        </transition>
     </div>
     <router-view></router-view>
 </template>
@@ -138,15 +149,16 @@ export default {
             showNotification: false,
             notificationMessage: '',
             nameError: '',
-            isOpening: true,
             pickupTime: '',
             availableTimes: [
                 { value: '', display: '不限時間', disabled: false }
             ],
             interval: 0,
             timeHintMessage: '目前要等候 0 分鐘',
+            isOpening: true,
             isValidTime: true,
             isSubmitting: false,
+            showShopClosed: false,
             categories: [],
             seasoning: {
                 spiciness: '不辣',
@@ -160,20 +172,8 @@ export default {
             }
         }
     },
-    computed: {
-        total() {
-            return this.categories.reduce((sum, category) => {
-                return sum + category.items.reduce((catSum, item) => {
-                    if (item.sizes) {
-                        return catSum + (item.sizes[item.selectedSize].price * item.quantity)
-                    }
-                    return catSum + (item.price * item.quantity)
-                }, 0)
-            }, 0)
-        },
-    },
-    mounted() {
-        console.log('axios 已成功引入:', axios)
+    props: {
+        show: { type: Boolean, default: false }
     },
     async created() {
         await this.fetchMenu()
@@ -184,10 +184,15 @@ export default {
             try {
 
                 const response = await axios.get(`${process.env.VUE_APP_API_URL}/api/kuasasiaola`)
+                
+                this.isOpening = response.data.opened
+                this.showShopClosed = !this.isOpening
+
                 this.categories = response.data.categories
                 this.spicinessOptions = response.data.seasoning.spicinessOptions
                 this.powderOptions = response.data.seasoning.powderOptions
                 this.toppingOptions = response.data.seasoning.toppingOptions
+
                 this.interval = response.data.interval
                 this.updateIntervalHintMessage(this.interval)
 
@@ -374,6 +379,9 @@ export default {
             if (this.customer.notes.length >= 200) {
                 this.customer.notes = this.customer.notes.slice(0, 200)
             }
+        },
+        closeShopNotice() {
+            this.showShopClosed = false
         }
     }
 }
@@ -441,6 +449,90 @@ body {
 
 .global-notification[data-type="info"] {
     background: #3498db;
+}
+
+/* 關店通告樣式 */
+.shop-closed-notice {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fade-in 0.4s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.notice-content {
+  background: #fff;
+  width: 90%;
+  max-width: 480px;
+  padding: 2rem 1.5rem;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  text-align: center;
+  position: relative;
+  animation: slide-up 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 2rem;
+  background: none;
+  border: none;
+  color: #666;
+  line-height: 1;
+  padding: 12px;
+  cursor: pointer;
+  touch-action: manipulation; /* 避免點擊延遲 */
+}
+
+.close-btn:hover {
+  color: #FF6B6B;
+  transform: scale(1.1);
+}
+
+.notice-title {
+  color: #FF6B6B;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.notice-close-day {
+  color: #666;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.notice-icon {
+  font-size: 2.6rem;
+  margin: 1rem 0;
+}
+
+/* 動畫與既有樣式兼容 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: opacity 0.3s;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .customer-info-section {
@@ -529,7 +621,6 @@ body {
 }
 
 @keyframes shake {
-
     0%,
     100% {
         transform: translateX(0);
@@ -640,6 +731,19 @@ body {
     .global-notification {
         padding: 16px;
         font-size: 1.1rem;
+    }
+
+    .notice-content {
+        border-radius: 15px 15px 0 0;
+        padding: 1.5rem 1rem;
+    }
+
+    .notice-title {
+        font-size: 1.3rem;
+    }
+
+    .notice-close-day {
+        font-size: 0.9rem;
     }
 
     .input-error {
