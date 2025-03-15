@@ -169,7 +169,8 @@ export default {
                 name: '',
                 phone: '',
                 notes: ''
-            }
+            },
+            checkOpenTimer: null
         }
     },
     props: {
@@ -178,6 +179,10 @@ export default {
     async created() {
         await this.fetchMenu()
         this.generateTimeSlots()
+        this.startOpenTimer()
+    },
+    beforeUnmount() {
+        clearInterval(this.checkOpenTimer)
     },
     methods: {
         async fetchMenu() {
@@ -295,6 +300,17 @@ export default {
                 this.nameError = '';
             }
         },
+        async fetchIsOpen() {
+            try {
+                const res = await fetch(`${process.env.VUE_APP_API_URL}/api/setting_open`);
+                const data = await res.json();
+
+                this.isOpening = data.opened;
+                this.showShopClosed = !this.isOpening;
+            } catch (error) {
+                console.error('更新營業失敗:', error);
+            }
+        },
         // 震動回饋
         triggerHapticFeedback() {
             if ('vibrate' in navigator) {
@@ -382,6 +398,9 @@ export default {
         },
         closeShopNotice() {
             this.showShopClosed = false
+        },
+        startOpenTimer() {
+            this.checkOpenTimer = setInterval(this.fetchIsOpen, 60 * 1000);
         }
     }
 }
