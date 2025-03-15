@@ -55,7 +55,7 @@ export default {
   mounted() {
     this.fetchCurrentInterval()
     this.fetchCurrentOpen()
-    this.timer = setInterval(this.syncInterval, 6 * 60 * 1000) // 每6分鐘同步
+    this.timer = setInterval(this.syncInterval, 3 * 60 * 1000) // 每3分鐘同步
   },
   methods: {
     async fetchCurrentInterval() {

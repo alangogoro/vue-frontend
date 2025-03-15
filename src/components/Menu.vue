@@ -186,6 +186,18 @@ export default {
     props: {
         show: { type: Boolean, default: false }
     },
+    computed: {
+        total() {
+            return this.categories.reduce((sum, category) => {
+                return sum + category.items.reduce((catSum, item) => {
+                    if (item.sizes) {
+                        return catSum + (item.sizes[item.selectedSize].price * item.quantity)
+                    }
+                    return catSum + (item.price * item.quantity)
+                }, 0)
+            }, 0)
+        },
+    },
     async created() {
         await this.fetchMenu()
         this.generateTimeSlots()
@@ -761,6 +773,12 @@ body {
         font-size: 1.4rem;
     }
 
+    .quantity {
+        font-size: 1.3em;
+        min-width: 40px;
+        padding: 6px 10px;
+    }
+
     .modern-input,
     .custom-time-select {
         font-size: 16px !important;
@@ -941,16 +959,19 @@ small {
 }
 
 .quantity {
-    min-width: 30px;
+    min-width: 32px;
     text-align: center;
     font-weight: bold;
     color: #2c3e50;
     transition: color 0.3s ease;
+
+    font-size: 1.2em;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', Roboto, sans-serif;
+    font-variant-numeric: tabular-nums; /* 強制等寬數字 */
 }
 
 .quantity.highlight {
     color: #FF6B6B;
-    font-weight: 800;
 }
 
 /* 調味選擇 */
@@ -1037,8 +1058,11 @@ small {
 .total-amount {
     font-size: 1.8em;
     color: #e74c3c;
-    font-weight: 700;
+    font-weight: bold;
     letter-spacing: 1px;
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
 }
 
 .submit-btn {
