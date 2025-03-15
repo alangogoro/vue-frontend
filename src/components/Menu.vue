@@ -2,7 +2,14 @@
     <div id="app">
         <h1 class="header">三重埔鹽酥雞</h1>
 
+        <!-- 延遲提示 -->
+        <div v-if="isServerDelayed" class="delay-notice">
+            <div class="loading-icon"></div>
+            <p>菜單讀取中，預計 1 分鐘內恢復</p>
+        </div>
+
         <!-- 菜單分類區塊 -->
+        <template v-if="isMenuLoaded">
         <div v-for="category in categories" :key="category.name" class="menu-category">
             <h2 class="category-title">{{ category.name }}</h2>
             <div class="menu-items">
@@ -36,9 +43,10 @@
                 </div>
             </div>
         </div>
+        </template>
 
         <!-- 調味選擇區塊 -->
-        <div class="seasoning-section">
+        <div v-if="isMenuLoaded" class="seasoning-section">
             <h2 class="seasoning-title">調味選擇</h2>
             <div class="seasoning-grid">
                 <div class="seasoning-group">
@@ -146,31 +154,33 @@ export default {
     name: 'App',
     data() {
         return {
-            showNotification: false,
-            notificationMessage: '',
-            nameError: '',
-            pickupTime: '',
-            availableTimes: [
-                { value: '', display: '不限時間', disabled: false }
-            ],
-            interval: 0,
-            timeHintMessage: '目前要等候 0 分鐘',
             isOpening: true,
-            isValidTime: true,
-            isSubmitting: false,
             showShopClosed: false,
+            checkOpenTimer: null,
             categories: [],
             seasoning: {
                 spiciness: '不辣',
                 powder: '未選',
                 toppings: []
             },
+            isMenuLoaded: true,
+            isServerDelayed: true,
             customer: {
                 name: '',
                 phone: '',
                 notes: ''
             },
-            checkOpenTimer: null
+            nameError: '',
+            interval: 0,
+            pickupTime: '',
+            availableTimes: [
+                { value: '', display: '不限時間', disabled: false }
+            ],
+            isValidTime: true,
+            timeHintMessage: '目前要等候 0 分鐘',
+            isSubmitting: false,
+            showNotification: false,
+            notificationMessage: ''
         }
     },
     props: {
@@ -186,6 +196,7 @@ export default {
     },
     methods: {
         async fetchMenu() {
+            this.isMenuLoaded = false
             try {
 
                 const response = await axios.get(`${process.env.VUE_APP_API_URL}/api/kuasasiaola`)
@@ -197,13 +208,17 @@ export default {
                 this.spicinessOptions = response.data.seasoning.spicinessOptions
                 this.powderOptions = response.data.seasoning.powderOptions
                 this.toppingOptions = response.data.seasoning.toppingOptions
+                this.isMenuLoaded = true
+                this.isServerDelayed = false
 
                 this.interval = response.data.interval
                 this.updateIntervalHintMessage(this.interval)
 
             } catch (error) {
-                console.error('菜單載入失敗:', error);
-                this.showGlobalNotification('⚠️ 菜單載入失敗，請稍後再試', 3000, 'error');
+                this.isServerDelayed = true
+
+                console.error('菜單載入失敗:', error)
+                this.showGlobalNotification('⚠️ 菜單載入失敗，請稍後再試', 3000, 'error')
             }
         },
         increaseQuantity(categoryName, itemIndex) {
@@ -387,6 +402,10 @@ export default {
             return isAfterClose || isBeforeOpen;
         },
         updateIntervalHintMessage(interval) {
+            if (this.isOpening === false) {
+                this.timeHintMessage = '目前沒有營業'
+                return
+            }
             this.timeHintMessage = interval === 0
                 ? '目前可為您現做'
                 : `目前要等候 ${interval} 分鐘`;
@@ -1059,6 +1078,39 @@ small {
     align-items: center;
     justify-content: center;
     gap: 10px;
+}
+
+.delay-notice {
+  padding: 1.5rem;
+  margin: 1rem 0;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 12px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.loading-icon {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #FF6B6B;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.delay-notice p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.95rem;
 }
 
 .loading-spinner {
