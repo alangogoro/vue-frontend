@@ -130,8 +130,8 @@
             <div class="notice-content">
             <button class="close-btn" @click="closeShopNotice">×</button>
             <h2 class="notice-title">我們打烊了！</h2>
+            <img src="/images/close-image.jpeg" class="notice-img" alt="關店圖片">
             <p class="notice-close-day">每週一．二為固定公休時間</p>            
-            <div class="notice-icon">🌧️ 🐕 🌧️</div>
             </div>
         </div>
         </transition>
@@ -475,7 +475,7 @@ body {
   background: #fff;
   width: 90%;
   max-width: 480px;
-  padding: 2rem 1.5rem;
+  padding: 1.0rem 1.5rem;
   padding-bottom: max(2rem, env(safe-area-inset-bottom));
   border-radius: 24px 24px 0 0;
   text-align: center;
@@ -514,9 +514,16 @@ body {
   margin-bottom: 1.5rem;
 }
 
-.notice-icon {
-  font-size: 2.6rem;
-  margin: 1rem 0;
+.notice-img {
+  /*font-size: 2.6rem;
+  margin: 1rem 0;*/
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  padding: 4px;                /* 邊框內間距 */
+  background: white;         /* 底色 */
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2); /* 陰影強化層次 */
 }
 
 /* 動畫與既有樣式兼容 */
