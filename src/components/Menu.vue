@@ -5,7 +5,7 @@
         <!-- 延遲提示 -->
         <div v-if="isServerDelayed" class="delay-notice">
             <div class="loading-icon"></div>
-            <p>菜單讀取中，預計 1 分鐘內恢復</p>
+            <p>菜單組建中，請稍候約 30 秒 …</p>
         </div>
 
         <!-- 菜單分類區塊 -->
@@ -138,7 +138,7 @@
             <div class="notice-content">
             <button class="close-btn" @click="closeShopNotice">×</button>
             <h2 class="notice-title">我們打烊了！</h2>
-            <img src="/images/close-image.jpeg" class="notice-img" alt="關店圖片">
+            <img src="/images/close-image.jpg" class="notice-img" alt="關店圖片">
             <p class="notice-close-day">每週一．二為固定公休時間</p>            
             </div>
         </div>
@@ -523,11 +523,11 @@ body {
 
 .notice-content {
   background: #fff;
-  width: 90%;
-  max-width: 480px;
+  width: 80%;
+  max-width: 415px;
   padding: 1.0rem 1.5rem;
   padding-bottom: max(2rem, env(safe-area-inset-bottom));
-  border-radius: 24px 24px 0 0;
+  border-radius: 32px 32px 0 0;
   text-align: center;
   position: relative;
   animation: slide-up 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -849,11 +849,6 @@ small {
     background: #fff;
 }
 
-/* .category-title {
-    color: #e74c3c;
-    border-bottom: 2px solid #e74c3c;
-} */
-
 .category-title {
     border-bottom: 2px solid;
     padding-bottom: 10px;
@@ -880,6 +875,10 @@ small {
 .menu-category:nth-child(5) .category-title {
     color: #FF69B4;
     border-bottom-color: #FF69B4;
+}
+.menu-category:nth-child(6) .category-title {
+    color: #A2D2DF;
+    border-bottom-color: #A2D2DF;
 }
 
 /* 商品項目 */
@@ -971,7 +970,7 @@ small {
 }
 
 .quantity.highlight {
-    color: #FF6B6B;
+    color: #E50046;
 }
 
 /* 調味選擇 */
